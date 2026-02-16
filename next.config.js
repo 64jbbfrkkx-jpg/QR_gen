@@ -1,15 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "export",
+  basePath: "/QR_gen",
+  assetPrefix: "/QR_gen",
   images: {
     unoptimized: true,
   },
-  // Optional: Change the output directory
-  // distDir: 'dist',
-
-  // Optional: Add basePath for subdirectory deployment
-  // basePath: '/qr-generator',
-
   // Disable server-side features for static export
   eslint: {
     ignoreDuringBuilds: true,
