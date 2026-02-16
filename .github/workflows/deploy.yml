@@ -20,24 +20,30 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: "npm"
-          
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
         with:
           static_site_generator: next
-          
+
       - name: Install dependencies
         run: npm ci
-        
+
       - name: Build with Next.js
         run: npm run build
-        
+
+      - name: Copy public files to out directory
+        run: |
+          if [ -d "public" ]; then
+            cp -r public/* out/ || true
+          fi
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

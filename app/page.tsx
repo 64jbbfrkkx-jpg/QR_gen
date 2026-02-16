@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Download, Link2, Sparkles } from "lucide-react";
 
 export default function QRGenerator() {
-  const [url, setUrl] = useState("https://example.com");
+  const [url, setUrl] = useState("https://www.fiverr.com/s/zWaZ2ge");
   const [includeLogo, setIncludeLogo] = useState(BRAND_LOGO.enabled);
   const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
   const [qrCode, setQrCode] = useState<QRCodeStyling | null>(null);
