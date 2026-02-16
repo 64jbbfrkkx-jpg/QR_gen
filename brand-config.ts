@@ -182,5 +182,5 @@ export const BRAND_SETTINGS = {
 // ============================================
 export const BRAND_LOGO: LogoConfig = {
   enabled: true,
-  url: "/logo.svg", // Path to logo in /public folder
+  url: "./public/logo.svg", // Path to logo in /public folder
 };
