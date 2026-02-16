@@ -37,16 +37,17 @@ jobs:
 
       - name: Build with Next.js
         run: npm run build
+        # Ensure 'output: export' is in your next.config.js
+        # This AUTOMATICALLY copies public/logo.svg to out/logo.svg
 
-      - name: List out directory contents
+      # This file tells GitHub Pages explicitly "Do not process with Jekyll"
+      # This is required for Next.js sites to load CSS/JS correctly.
+      - name: Create .nojekyll file
+        run: touch out/.nojekyll
+
+      # Debugging: Check if logo.svg is actually here
+      - name: Verify build output
         run: ls -la out/
-
-      - name: Copy public files to out directory
-        run: |
-          mkdir -p out/public
-          if [ -d "public" ]; then
-            cp -r public/* out/ || true
-          fi
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
