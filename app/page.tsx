@@ -54,8 +54,9 @@ export default function QRGenerator() {
 
   // Initialize QR code (recreate when logo data/other options change)
   useEffect(() => {
+    const baseOptions = (BRAND_SETTINGS.qrOptions ?? {}) as Options;
     const qrInstance = new QRCodeStyling({
-      ...(BRAND_SETTINGS.qrOptions as Options),
+      ...baseOptions,
       data: url,
       image:
         includeLogo && BRAND_LOGO.enabled
@@ -93,30 +94,32 @@ export default function QRGenerator() {
       qrCode.append(qrRef.current);
 
       // Select the generated SVG/Canvas and make it responsive
-      const child = qrRef.current.firstChild as HTMLElement | null;
+      const child = qrRef.current.firstElementChild as Element | null;
       if (child) {
-        // If it's an <svg>, set attributes for proper scaling
-        const svgEl = child.querySelector
+        // Prefer any inner <svg> if present
+        const innerSvg = (child as Element).querySelector
           ? (child as Element).querySelector("svg")
           : null;
         const tag = (child.tagName || "").toString().toUpperCase();
-        if (tag === "SVG" || svgEl) {
-          const svg = (
-            tag === "SVG" ? (child as unknown as SVGElement) : svgEl
-          ) as SVGElement;
-          svg.setAttribute("width", "100%");
-          svg.setAttribute("height", "100%");
-          svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
-          (svg.style as any).display = "block";
-        } else if ((child as HTMLCanvasElement).tagName === "CANVAS") {
+        const svgEl =
+          tag === "SVG" ? (child as unknown as SVGElement) : innerSvg;
+
+        if (svgEl) {
+          svgEl.setAttribute("width", "100%");
+          svgEl.setAttribute("height", "100%");
+          svgEl.setAttribute("preserveAspectRatio", "xMidYMid meet");
+          (svgEl.style as any).display = "block";
+        } else if (
+          tag === "CANVAS" ||
+          (child as HTMLCanvasElement).tagName === "CANVAS"
+        ) {
           const canvas = child as HTMLCanvasElement;
           canvas.style.width = "100%";
-          //canvas.style.height = "50%";
           canvas.style.display = "block";
         } else {
-          child.style.width = "100%";
-          child.style.height = "100%";
-          child.style.display = "block";
+          (child as HTMLElement).style.width = "100%";
+          (child as HTMLElement).style.height = "100%";
+          (child as HTMLElement).style.display = "block";
         }
       }
 
@@ -165,10 +168,9 @@ export default function QRGenerator() {
     if (!qrCode) return;
 
     const frameData = BRAND_SETTINGS.frames[selectedFrame];
+    if (!frameData) return;
     const finalWidth = frameData.width;
     const finalHeight = frameData.height;
-
-    if (!frameData) return;
 
     const { x, y, qrSize } = frameData.position;
 
@@ -229,8 +231,9 @@ export default function QRGenerator() {
 
     try {
       // Create a new QR code instance with high resolution
+      const baseOptions = (BRAND_SETTINGS.qrOptions ?? {}) as Options;
       const highResQR = new QRCodeStyling({
-        ...(BRAND_SETTINGS.qrOptions as Options),
+        ...baseOptions,
         width: size,
         height: size,
         data: url
@@ -249,17 +252,27 @@ export default function QRGenerator() {
       // Wait for rendering to complete
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // Get the rendered element
-      const renderedElement = tempContainer.firstChild as HTMLElement;
+      // Get the rendered element (prefer element child)
+      const renderedElement = tempContainer.firstElementChild as Element | null;
+      if (!renderedElement) {
+        document.body.removeChild(tempContainer);
+        throw new Error("QR render element not found");
+      }
 
       let imageDataUrl: string;
 
-      if (
-        renderedElement.tagName === "svg" ||
-        renderedElement.tagName === "SVG"
-      ) {
-        // Handle SVG
-        const svgElement = renderedElement as SVGElement;
+      const renderedTag = (renderedElement.tagName || "")
+        .toString()
+        .toUpperCase();
+      const innerSvg = renderedElement.querySelector
+        ? (renderedElement.querySelector("svg") as SVGElement | null)
+        : null;
+
+      if (renderedTag === "SVG" || innerSvg) {
+        const svgElement =
+          renderedTag === "SVG"
+            ? (renderedElement as unknown as SVGElement)
+            : innerSvg!;
         const svgString = new XMLSerializer().serializeToString(svgElement);
         const svgBlob = new Blob([svgString], { type: "image/svg+xml" });
         const svgUrl = URL.createObjectURL(svgBlob);
@@ -280,11 +293,11 @@ export default function QRGenerator() {
         ctx.drawImage(img, 0, 0, size, size);
 
         imageDataUrl = canvas.toDataURL("image/png");
-      } else if (renderedElement.tagName === "CANVAS") {
-        // Handle Canvas
+      } else if (renderedTag === "CANVAS") {
         const canvas = renderedElement as HTMLCanvasElement;
         imageDataUrl = canvas.toDataURL("image/png");
       } else {
+        document.body.removeChild(tempContainer);
         throw new Error("Unexpected QR code element type");
       }
 
@@ -305,10 +318,9 @@ export default function QRGenerator() {
 
     try {
       const frameData = BRAND_SETTINGS.frames[selectedFrame];
+      if (!frameData) throw new Error("Frame not found");
       const finalWidth = frameData.width;
       const finalHeight = frameData.height;
-
-      if (!frameData) throw new Error("Frame not found");
 
       const { x, y, qrSize } = frameData.position;
 
@@ -419,19 +431,19 @@ export default function QRGenerator() {
   };
 
   // Calculate QR code preview size based on frame position
-  const getPreviewSizePercentage = () => {
+  const getPreviewSizePercentage = (): {
+    widthPercent: number;
+    heightPercent: number;
+  } => {
     const frameData = BRAND_SETTINGS.frames[selectedFrame];
-    if (!frameData) return 80; // default fallback
+    if (!frameData) return { widthPercent: 80, heightPercent: 80 }; // default fallback
 
     const finalWidth = frameData.width;
     const finalHeight = frameData.height;
     const { qrSize } = frameData.position;
 
-    // Use the smaller dimension to calculate the percentage
-    //const referenceDimension = Math.min(finalWidth, finalHeight);
     const widthPercent = (qrSize / finalWidth) * 100;
     const heightPercent = (qrSize / finalHeight) * 100;
-    // Calculate percentage of QR size relative to reference dimension
     return {
       widthPercent,
       heightPercent,
